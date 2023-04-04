@@ -1,0 +1,45 @@
+.resultBox{
+    width:100vw;
+    height:100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    .mask{
+        width:100vw;
+        height:100vh;
+        background-color:rgba(0,0,0,0.8);
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 900;
+    }
+    .results{
+        z-index: 901;
+        position: relative;
+        width: 200px;
+        height:auto;
+        padding:24px;
+        background-color: #fff;
+        margin-top: -250px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        flex-direction: column;
+        .success{
+            font-size: 28px;
+            color:#52c41a;
+            margin-bottom: 16px;
+
+        }
+        .fail{
+            font-size: 28px;
+            color:#cf1322;
+            margin-bottom: 16px;
+        }
+        
+        
+    }
+}
