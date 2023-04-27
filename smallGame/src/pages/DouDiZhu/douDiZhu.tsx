@@ -1,5 +1,6 @@
 import {
   getCard,
+
   getGroupData,
   getIsContinuityNumber,
   getMyCard,
@@ -379,7 +380,7 @@ interface I_useCardItem{
 }
 export interface I_roomData {
   roomId: number;//也为创建时间
-  status: 'prepare' | 'selectLandlord' | 'reopen' | 'play' | 'useCard'|'end'; //准备阶段 叫地主阶段  重开  游戏阶段  结束阶段 
+  status: 'prepare' | 'selectLandlord' | 'reopen' | 'play' | 'useCard'|'end'|'exit'|'maxCount'; //准备阶段 叫地主阶段  重开  游戏阶段  结束阶段 退出  人数已满
   model: 0 | 1; //0都是随机地主 1轮庄,赢的人是地主
   allCount: number; //打了多少场次
   initPost: number; //地主
@@ -399,7 +400,7 @@ interface I_roundCard{
 }
 
 //process.env.NODE_ENV="production"//生产环境   "development"开发环境
-const wsAddress=process.env.NODE_ENV=='development'?'ws://localhost:9000':'ws://47.97.23.119:9000'
+const wsAddress=process.env.NODE_ENV=='development'?'ws://localhost:9100':'ws://47.97.23.119:9000'
 const ws = new WebSocket(wsAddress);
 ws.binaryType = 'arraybuffer';
 (ws as any).AuserName='我是自定义属性'
@@ -788,7 +789,11 @@ const isDisNoUseCard=roomData?.lastUser===currentPlayerIndex
       //没人叫地主，重开
       message.info('没有人抢地主，重开');
       onStart();
-    } else if (data.status == 'play') {
+    } else if (data.status == 'maxCount') {
+      //超出最大人数
+      message.info('房间已满，请重新选择房间');
+      history.push('/doutDiZhu')
+    }else if (data.status == 'play') {
       //有人叫地主了，正式开始
       setRoundCard([]);
       setRoomData({ ...data });
