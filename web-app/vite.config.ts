@@ -16,10 +16,13 @@ export default defineConfig(({ mode }) => {
         '@/utils': path.resolve(__dirname, 'src/utils'),
       },
     },
+    define: {
+      __WS_ADDRESS__: JSON.stringify(proxyConfig[envKey].wsAddress),
+    },
     server: {
       port: 9100,
       strictPort: true,
-      proxy: proxyConfig[envKey],
+      proxy: proxyConfig[envKey].proxy,
     },
   }
 })

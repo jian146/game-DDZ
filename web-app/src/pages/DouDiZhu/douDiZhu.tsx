@@ -407,9 +407,7 @@ interface I_roundCard {
   useId: string
 }
 
-//process.env.NODE_ENV="production"//生产环境   "development"开发环境
-// const wsAddress=process.env.NODE_ENV=='development'?'ws://localhost:9100':'ws://47.97.23.119:9000'
-const wsAddress = "ws://localhost:9201"
+const wsAddress: string = __WS_ADDRESS__
 const ws = new WebSocket(wsAddress)
 ws.binaryType = "arraybuffer"
 ;(ws as any).AuserName = "我是自定义属性"

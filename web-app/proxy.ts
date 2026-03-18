@@ -1,29 +1,39 @@
 type EnvName = 'dev' | 'test' | 'pre'
 
-export type ProxyEnvConfig = Record<
-  EnvName,
-  Record<string, { target: string; changeOrigin: boolean }>
->
+export type EnvConfig = {
+  proxy: Record<string, { target: string; changeOrigin: boolean }>
+  wsAddress: string
+}
 
-// Vite server proxy 配置映射（对应你的 umi proxy 示例 dev/test/pre）
+export type ProxyEnvConfig = Record<EnvName, EnvConfig>
+
 const proxyConfig: ProxyEnvConfig = {
   dev: {
-    '/api': {
-      target: 'http://localhost:9200',
-      changeOrigin: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:9200',
+        changeOrigin: true,
+      },
     },
+    wsAddress: 'ws://localhost:9201',
   },
   test: {
-    '/api': {
-      target: 'https://proxy.pule.com',
-      changeOrigin: true,
+    proxy: {
+      '/api': {
+        target: 'https://proxy.pule.com',
+        changeOrigin: true,
+      },
     },
+    wsAddress: 'wss://proxy.pule.com',
   },
   pre: {
-    '/api': {
-      target: 'https://yyk.pule.com',
-      changeOrigin: true,
+    proxy: {
+      '/api': {
+        target: 'http://game-ddz-server-production.up.railway.app',
+        changeOrigin: true,
+      },
     },
+    wsAddress: 'wss://game-ddz-server-production.up.railway.app',
   },
 }
 
