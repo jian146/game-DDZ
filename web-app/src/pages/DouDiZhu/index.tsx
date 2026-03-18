@@ -1,10 +1,9 @@
-import storage from "@/utils/storage"
-import {getUserInfo, I_User, setUserInfo} from "@/utils/user"
+import {getUserInfo, setUserInfo} from "@/utils/user"
 
 import {Modal, Form, Button, Avatar, Input, message, List, Tag} from "antd"
 
 import {useState, useEffect} from "react"
-import styles from "./index.less"
+import styles from "./index.module.less"
 import newRequest from "@/utils/request"
 import {I_roomData} from "./douDiZhu"
 import moment from "moment"
@@ -44,7 +43,7 @@ const RoomPage = () => {
   }
   const onCreateRoom = async () => {
     newRequest({
-      url: "/api/creatRoom",
+      url: "/api/createRoom",
       options: {
         method: "post",
         data: {
@@ -70,7 +69,7 @@ const RoomPage = () => {
   }
   const onJoin = (roomItem: I_roomData) => {
     if (userName) {
-      navigate(`/doutDiZhu/${roomItem.roomId}/${userName}`)
+      navigate(`/ddz/${roomItem.roomId}/${userName}`)
       // history.push(`/doutDiZhu/${roomItem.roomId}/${userName}`);
     } else {
       setIsShowName(true)

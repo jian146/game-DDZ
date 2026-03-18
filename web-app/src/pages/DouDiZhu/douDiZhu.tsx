@@ -16,7 +16,7 @@ import {Avatar, Button, message, Select, Space, Spin} from "antd"
 import styles from "./douDiZhu.module.less"
 import PlayerHeader from "./components/playerHeader/playerHeader"
 import Result from "./result/result"
-import {useParams} from "react-router-dom"
+import {useNavigate, useParams} from "react-router-dom"
 const initCard: I_Card[] = [
   {
     id: 1,
@@ -409,15 +409,17 @@ interface I_roundCard {
 
 //process.env.NODE_ENV="production"//生产环境   "development"开发环境
 // const wsAddress=process.env.NODE_ENV=='development'?'ws://localhost:9100':'ws://47.97.23.119:9000'
-const wsAddress = "ws://localhost:9200"
+const wsAddress = "ws://localhost:9201"
 const ws = new WebSocket(wsAddress)
 ws.binaryType = "arraybuffer"
 ;(ws as any).AuserName = "我是自定义属性"
 const DouDiZhuPage = () => {
+  const navigate = useNavigate()
   const params: {userId: string; roomId: string} = useParams()
   const [cardData, setCardData] = useState<I_Card[]>([])
 
   const userId = params.userId ?? "1"
+
   const roomId = parseInt(params.roomId ?? "1")
   ws.addEventListener("getUser", () => {
     return {userName: userId, roomId}
@@ -456,7 +458,7 @@ const DouDiZhuPage = () => {
     const list2: I_Card[] = []
     let id = 0
     for (let i = 0; i <= 3; i++) {
-      const colorlist: I_Card[] = []
+      const colorList: I_Card[] = []
       for (let j = 3; j <= 15; j++) {
         id++
         const newCard = {
@@ -466,9 +468,9 @@ const DouDiZhuPage = () => {
           color: i as T_cardColor,
         }
         list2.push(newCard)
-        colorlist.push(newCard)
+        colorList.push(newCard)
       }
-      list.push(colorlist)
+      list.push(colorList)
     }
 
     list2.map((item) => {
@@ -499,10 +501,10 @@ const DouDiZhuPage = () => {
       useCard.push(initCard[element - 1])
     })
     useCard.sort((a, b) => a.point - b.point)
-    console.log("使用的牌", useCard)
 
     const lastRoundCard =
       roundCard.length === 0 ? [] : roundCard[roundCard.length - 1].useCard
+    console.log("使用的牌", useCard, lastRoundCard)
     const backData = getGroupData(useCard)
     /**
      * 是否是第一个出牌
@@ -552,7 +554,7 @@ const DouDiZhuPage = () => {
         backData[1].length !== 0 ||
         backData[3].length !== 0 ||
         backData[4].length !== 0 ||
-        consbackData[2].length < 3
+        backData[2].length < 3
       ) {
         return false
       }
@@ -570,7 +572,7 @@ const DouDiZhuPage = () => {
     const is34567 = () => {
       //有2排,3牌和4牌
       if (
-        consbackData[2].length !== 0 ||
+        backData[2].length !== 0 ||
         backData[3].length !== 0 ||
         backData[4].length !== 0 ||
         backData[1].length < 5
@@ -578,15 +580,20 @@ const DouDiZhuPage = () => {
         return false
       }
       const isPass = getIsContinuityNumber(backData, "1")
-      //比较大小
+      if (!isPass) return false
+      // 非首出：上家出的不是顺子则不能用顺子接牌
+      if (!firthUse && lastRoundCard.length < 5) {
+        return false
+      }
+      // 比较大小：长度必须相同，且最小牌的点数必须严格大于上家
       if (
         lastRoundCard.length >= 5 &&
-        backData[1].length !== lastRoundCard.length &&
-        backData[1][0][0].point <= lastRoundCard[0].point
+        (backData[1].length !== lastRoundCard.length ||
+          backData[1][0][0].point <= lastRoundCard[0].point)
       ) {
         return false
       }
-      return isPass
+      return true
     }
 
     const new333 = () => {
@@ -748,13 +755,13 @@ const DouDiZhuPage = () => {
       }
       console.log("出牌给后端的属性", sendData)
       onSend(sendData)
-      roloadCard()
+      reloadCard()
     }
   }
   /**
    * 不出牌
    */
-  const onNotuseCard = () => {
+  const onNotUseCard = () => {
     if (isDisNoUseCard) return "你是第一个出牌的人"
 
     const sendData: I_onSend = {
@@ -768,7 +775,7 @@ const DouDiZhuPage = () => {
     console.log("出牌给后端的属性", sendData)
     onSend(sendData)
   }
-  const roloadCard = () => {
+  const reloadCard = () => {
     setActiveCardId([])
   }
 
@@ -807,7 +814,7 @@ const DouDiZhuPage = () => {
     } else if (data.status == "maxCount") {
       //超出最大人数
       message.info("房间已满，请重新选择房间")
-      history.push("/doutDiZhu")
+      navigate("/room")
     } else if (data.status == "play") {
       //有人叫地主了，正式开始
       setRoundCard([])
@@ -895,7 +902,7 @@ const DouDiZhuPage = () => {
       setIsShowResult(false)
     }
   }
-  console.log("roomData", roomData)
+
   return (
     <Spin spinning={loading} tip="正在重新连接...">
       <div className={styles.page}>
@@ -997,7 +1004,7 @@ const DouDiZhuPage = () => {
                           type="primary"
                           style={{marginRight: 10, marginLeft: 10}}
                           onClick={() => {
-                            onNotuseCard()
+                            onNotUseCard()
                           }}
                         >
                           不要
@@ -1012,7 +1019,7 @@ const DouDiZhuPage = () => {
                       >
                         出牌
                       </Button>
-                      <Button onClick={roloadCard}>取消出牌</Button>
+                      <Button onClick={reloadCard}>取消出牌</Button>
                     </Space>
                   )}
               </div>

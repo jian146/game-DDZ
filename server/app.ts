@@ -56,14 +56,14 @@ app.use(bodyParser.json());
 
 // ws 服务
 const server = new WebSocketServer({
-  port: 9100,
+  port: 9201,
 });
 
 let user_sockets: UserSocketInfo[] = [];
 
 const initRoomData: RoomInfo = {
   roomId: 1677140369460, // new Date().getTime(),
-  status: 'prepare',
+  status: 'prepare',//准备阶段
   model: 0,
   allCount: 0,
   initPost: -1,
@@ -325,8 +325,8 @@ server.on('connection', function (socket) {
   });
 });
 
-app.listen(9002, () => {
-  console.log('Example app listening on port 9003!');
+app.listen(9200, () => {
+  console.log('Example app listening on port 9200!');
 });
 
 // 获取房间数据
@@ -338,7 +338,7 @@ app.get('/api/roomList', function (req, res) {
 });
 
 // 创建房间
-app.post('/api/creatRoom', function (req, res) {
+app.post('/api/createRoom', function (req, res) {
   const data = { userName: '测试' };
   res.status(200).json({
     isSuccess: true,

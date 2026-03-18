@@ -1,6 +1,7 @@
 import type {RouteObject} from "react-router-dom"
 import {Link, Outlet, useParams, useSearchParams} from "react-router-dom"
 import DouDiZhuPage from "./pages/DouDiZhu/douDiZhu"
+import RoomPage from "./pages/DouDiZhu"
 
 function Home() {
   return (
@@ -101,7 +102,11 @@ export const routes: RouteObject[] = [
     ],
   },
   {
-    path: "/ddz",
+    path: "/ddz/:roomId/:userId",
     element: <DouDiZhuPage />,
+  },
+  {
+    path: "/room",
+    element: <RoomPage />,
   },
 ]

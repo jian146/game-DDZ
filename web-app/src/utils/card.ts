@@ -28,7 +28,7 @@ export  const getMyCard=(cardIdList: number[],initCard: I_Card[])=>{
   }
 
 /**
-* //Knuth-Durstenfeld shuffle 的 ES6 实现 洗牌算法
+* Knuth-Durstenfeld shuffle 的 ES6 实现 洗牌算法
 * @param arr 要排序的数组
 * @returns
 */
