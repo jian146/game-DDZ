@@ -7,6 +7,7 @@
     "dev": "vite --mode dev",
     "dev:pre": "vite --mode pre",
     "build": "tsc -b && vite build",
+    "build:pre": "tsc -b && vite build --mode pre",
     "lint": "eslint .",
     "preview": "vite preview"
   },
