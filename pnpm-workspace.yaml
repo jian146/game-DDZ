@@ -1,0 +1,3 @@
+packages:
+  - 'game-ddz-server'
+  - 'game-ddz-web'

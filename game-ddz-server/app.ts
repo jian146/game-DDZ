@@ -99,15 +99,21 @@ app.use(bodyParser.json());
 
 // ============================
 // 前端静态文件（生产模式单服务部署）
-// 优先找 dist 同级的 public（部署时前端 dist 会被复制到这里），
-// 其次找 ../game-ddz-web/dist（本机开发时）
+// 按优先级依次查找：
+//   1) dist/../public        ← 单服务部署（public 复制到 game-ddz-server/）
+//   2) ../../build/public    ← 🎯 根目录统一产物
+//   3) ../../game-ddz-web/dist ← 本机开发（vite dev server 会处理，build 后也有）
 // ============================
 function findFrontendDist(): string | null {
-  // 部署模式：dist/../public（后端编译后 dist/app.js 旁边的 public）
+  // ① 单服务部署：dist/app.js → ../public
   const deployed = path.join(__dirname, '..', 'public');
   if (fs.existsSync(path.join(deployed, 'index.html'))) return deployed;
 
-  // 开发模式：同级前端项目的 dist
+  // ② 根目录统一产物：game-DDZ/build/public
+  const buildOut = path.join(__dirname, '..', '..', 'build', 'public');
+  if (fs.existsSync(path.join(buildOut, 'index.html'))) return buildOut;
+
+  // ③ 开发 / 前端构建产物
   const dev = path.join(__dirname, '..', '..', 'game-ddz-web', 'dist');
   if (fs.existsSync(path.join(dev, 'index.html'))) return dev;
 
@@ -115,6 +121,13 @@ function findFrontendDist(): string | null {
 }
 
 const frontendDist = findFrontendDist();
+
+// 健康检查端点（Railway 会定期请求 /health）
+// ⚠️ 必须在 SPA fallback 之前，否则会被正则 /^(?!\/api\/).*/ 匹配到
+app.get('/health', (_req, res) => {
+  res.status(200).json({ ok: true, uptime: process.uptime() });
+});
+
 if (frontendDist) {
   console.log(`[static] 前端静态文件目录: ${frontendDist}`);
   app.use(express.static(frontendDist));
