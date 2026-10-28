@@ -1,0 +1,43 @@
+.cardBox{
+    height: 80px;
+    width: 60px;
+    border-radius: 6px;
+    background-color: rgba(255,255,255,0.8);
+    margin-right:5px;
+    color:black;
+    // box-shadow: 5px 5px 15px rgba(0,0,0,0.2);    
+    // box-shadow: rgb(0 0 0 / 20%) 0 0 0 1px, rgb(0 0 0 / 45%) 0 3px 10px;  
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    position: relative;
+    cursor: pointer;
+    .cardName{
+        position: relative;
+        padding-top: 3px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: start;
+        padding-left: 6px;
+        line-height: 1;        
+    }
+    .content{
+        position:absolute;
+        bottom: 0;
+        width: 100%;
+        padding-bottom: 5px;
+        .jokerContent{
+            font-size: 22px;
+            padding-bottom: 16px;;
+        }
+    }
+
+}
+.redColor{
+    color:red;
+}
+.active{
+    top: -20px;
+}

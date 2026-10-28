@@ -1,0 +1,54 @@
+.page{
+    width:100vw;
+    height:100vh;
+    position: relative;
+    background-color: #AEDD81;
+    padding: 24px;
+    .headRow{
+        display: flex;
+        justify-content:center;
+     
+    }
+
+    .user{
+        width: 120px;
+        height: 150px;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding:24px;
+        border-radius: 8px;
+        // justify-content: center;
+        .userName{
+            font-size: 16px;
+            margin-top: 12px;
+            color: rgb(135, 208, 104);
+        }
+    }
+    .content{
+        display: flex;
+        justify-content:center;
+        margin-top:24px;
+        .roomList{
+            width:400px;
+            // height: 320px;
+            background-color:#fff;
+            border-radius: 8px;
+            .roomItem{
+                width:100%;
+                display: flex;
+                align-items: center;
+            }
+            .listFooter{
+                display: flex;
+                align-items: center;
+                justify-content:center;
+            }
+        }
+    }
+
+}
+*{
+    user-select: none;
+}
