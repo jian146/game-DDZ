@@ -1,0 +1,19 @@
+{
+  "name": "ddz-game",
+  "private": true,
+  "version": "1.0.0",
+  "description": "斗地主 Web 游戏 - 单服务部署包",
+  "scripts": {
+    "build": "pnpm build:web && pnpm build:server",
+    "build:web": "cd game-ddz-web && pnpm build",
+    "build:server": "cd game-ddz-server && node scripts/build.js",
+    "start": "cd game-ddz-server && node dist/app.js",
+    "dev:web": "cd game-ddz-web && pnpm dev",
+    "dev:server": "cd game-ddz-server && pnpm dev",
+    "dev": "concurrently \"pnpm dev:server\" \"pnpm dev:web\"",
+    "typecheck": "cd game-ddz-server && pnpm typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
