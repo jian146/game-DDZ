@@ -1,45 +1,237 @@
-.resultBox{
-    width:100vw;
-    height:100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/**
+ * 结算弹窗
+ * 用 fixed + flex 居中，不再靠 margin-top 负值定位（那个在手机上会飞出屏幕）。
+ */
+
+.resultBox {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+
+  .mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(3px);
+    animation: maskIn 0.2s ease-out;
+  }
+
+  .results {
     position: relative;
-    .mask{
-        width:100vw;
-        height:100vh;
-        background-color:rgba(0,0,0,0.8);
-        position: absolute;
-        left: 0;
-        top: 0;
-        z-index: 900;
+    z-index: 901;
+    width: min(320px, 86vw);
+    padding: 26px 22px 22px;
+    background: linear-gradient(180deg, #ffffff 0%, #f7fbf4 100%);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+    animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-sizing: border-box;
+
+    .icon {
+      font-size: 46px;
+      line-height: 1;
+      margin-bottom: 4px;
+      animation: iconBounce 0.5s ease-out;
     }
-    .results{
-        z-index: 901;
-        position: relative;
-        width: 200px;
-        height:auto;
-        padding:24px;
-        background-color: #fff;
-        margin-top: -250px;
-        border-radius: 8px;
+
+    .success {
+      font-size: 26px;
+      font-weight: 900;
+      color: #38a169;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    .fail {
+      font-size: 26px;
+      font-weight: 900;
+      color: #d64545;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    /* ===== 跑得快结算明细 ===== */
+    .deltaBig,
+    .deltaBigMinus {
+      font-size: 30px;
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+    .deltaBig {
+      color: #2f9e44;
+    }
+    .deltaBigMinus {
+      color: #d64545;
+    }
+
+    .deltaList {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 14px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(47, 107, 42, 0.06);
+      box-sizing: border-box;
+
+      .deltaRow {
         display: flex;
         align-items: center;
-        justify-content: center;
-        flex-wrap: wrap;
-        flex-direction: column;
-        .success{
-            font-size: 28px;
-            color:#52c41a;
-            margin-bottom: 16px;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 13px;
+        line-height: 1.9;
+        color: #444;
+        padding: 0 4px;
+        border-radius: 8px;
+      }
 
+      /* 自己那一行高亮，一眼找到 */
+      .deltaMe {
+        background: rgba(47, 107, 42, 0.1);
+        font-weight: 800;
+        color: #2f6b2a;
+      }
+
+      .deltaName {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        .crown {
+          font-size: 12px;
         }
-        .fail{
-            font-size: 28px;
-            color:#cf1322;
-            margin-bottom: 16px;
+        .aiTag {
+          flex: 0 0 auto;
+          padding: 0 4px;
+          border-radius: 4px;
+          background: #e8eef5;
+          color: #6b8199;
+          font-size: 9px;
+          font-weight: 700;
+          line-height: 1.5;
         }
-        
-        
+      }
+
+      .deltaUp,
+      .deltaDown,
+      .deltaZero {
+        flex: 0 0 auto;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .deltaUp {
+        color: #2f9e44;
+      }
+      .deltaDown {
+        color: #d64545;
+      }
+      .deltaZero {
+        color: #aaa;
+      }
     }
+
+    .keepBtn {
+      width: 100%;
+      height: 44px;
+      border-radius: 22px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+  }
+}
+
+@keyframes maskIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.86) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes iconBounce {
+  0% {
+    transform: scale(0.4) rotate(-16deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.14) rotate(6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .resultBox .results {
+    padding: 22px 18px 18px;
+
+    .icon {
+      font-size: 40px;
+    }
+    .success,
+    .fail {
+      font-size: 23px;
+    }
+  }
+}
+
+/* 横屏矮屏：压缩高度 */
+@media (max-height: 480px) {
+  .resultBox .results {
+    padding: 16px 18px 14px;
+    gap: 2px;
+
+    .icon {
+      font-size: 32px;
+      margin-bottom: 0;
+    }
+    .success,
+    .fail {
+      font-size: 20px;
+    }
+    .subtitle {
+      margin-bottom: 8px;
+    }
+    .keepBtn {
+      height: 38px;
+    }
+  }
 }

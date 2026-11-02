@@ -1,95 +1,1006 @@
-.page{
-    width:100vw;
-    height:100vh;
-    position: relative;
-    background-color: #AEDD81;
-    .prepare{
-        position:absolute;
-        display: flex;
-        align-items: center;
-        // width: 300px;
-        height: 150px;
-        transform-style: preserve-3d;
-        background-color: #fff;
-        border-radius: 12px;
-        top:120px;
-        left: 50%;
-        transform: translate(-50%, 0%);
-        padding:12px 24px;
-        .item{
-            margin-right: 12px;
-            .name{
-                margin-top: 8px;
-               
-                text-align: center;
-                font-size: 16px;
-                font-weight: bold;
-            }
-        }
-    }
-    .aHand{
-        position:absolute;
-        top:120px;
-        left: 50%;
-        transform: translate(-50%, 0%);
-        padding:12px 24px;
-        display: flex;
-        align-items: center;
-    }
-    .roundCardList{
-        position:absolute;
-        
-        top:190px;
-        left: 50%;
-        transform: translate(-50%, 0%) scale(0.6);
-        padding:12px 24px;
-        display: flex;
-        align-items: center;
-        flex-direction: column;
-        .roundListItem{
-            display: flex;
-            flex-wrap: nowrap;
-            margin-bottom: 10px;
-            width: 100%;
-            .roundListItemUserName{
-                padding: 0 5px;
-                font-size: 28px;
-                color: black;
-                display: flex;
-                align-items: center;
-                font-weight: bold;
-                margin-right: 10px;
-            }
-        }
-    }
-    .myContent{
-        position: absolute;
-        bottom: 0;
-        left:0;
-        width: 100vw;
-        display:flex;
-        flex-wrap:wrap;
-       
-        .btnBox{
-            width: 100%;
-            display:flex;
-            flex-wrap: nowrap;
-            justify-content:center;
-            margin-bottom: 30px;;
-        }
-        .cardList{
-            display:flex;
-            flex-wrap: nowrap;
-            justify-content:center;
-            // position:relative;
-            // bottom: 0;
-            // left:0;
-            width: 100vw;
-            padding-bottom: 10px;
-        }
+/**
+ * 游戏页布局
+ *
+ * 响应式策略：
+ *   - 整体用 flex 纵向三段式（顶栏 / 牌桌 / 手牌区），不再靠 top:120px 硬编码
+ *   - 所有尺寸从 --card-w 派生，--card-w 用 clamp 跟随视口
+ *   - 用 100dvh 而非 100vh，解决移动端浏览器地址栏收起时的抖动
+ */
+
+.page {
+  /* ===== 尺寸基线：整页所有元素都从这里派生 ===== */
+  /* 8.2vw 而不是 9.2vw：露出量从 42% 提到 54% 之后每张牌更宽，
+     20 张牌在 768px 平板上会顶出容器，收一点系数刚好放得下 */
+  --card-w: clamp(36px, 8.2vw, 76px);
+  --card-h: calc(var(--card-w) * 1.34);
+  --card-gap: calc(var(--card-w) * -0.46); /* 手牌重叠量：露出 54%，20 张也放得下 */
+  --table-card-w: clamp(22px, 3.2vw, 40px);
+  --table-card-h: calc(var(--table-card-w) * 1.34);
+
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  /* 户外牌桌：上方天光 → 沙滩，牌桌本身由 .tableSurface 画 */
+  background:
+    radial-gradient(
+      circle at 84% 3%,
+      rgba(255, 252, 214, 0.9) 0%,
+      rgba(255, 242, 170, 0.3) 13%,
+      rgba(255, 242, 170, 0) 32%
+    ),
+    linear-gradient(
+      180deg,
+      #7fc6ea 0%,
+      #a7d9f3 7%,
+      #d6edfb 13%,
+      #f4e5c5 22%,
+      #eed3a0 100%
+    );
+  color: #fff;
+
+  /* ===== 顶部栏 ===== */
+  .topBar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.14);
+    backdrop-filter: blur(6px);
+    z-index: 20;
+
+    .roomInfo {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.95);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+
+      .roomId {
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: 0.3px;
+      }
+
+      .statusTag {
+        background: rgba(255, 255, 255, 0.24);
+        border-radius: 10px;
+        padding: 2px 9px;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      /* 玩法标签：跑得快用冷色，和斗地主一眼分开 */
+      .modeTagDdz,
+      .modeTagPdk {
+        flex-shrink: 0;
+        border-radius: 10px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+      }
+      .modeTagDdz {
+        background: #ffe0a8;
+        color: #7a4c07;
+      }
+      .modeTagPdk {
+        background: #bfe4ff;
+        color: #0f4c75;
+      }
     }
 
-}
-*{
+    .topActions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .soundBtn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.22);
+      color: #fff;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.18s;
+      padding: 0;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.34);
+      }
+      &:active {
+        transform: scale(0.94);
+      }
+    }
+  }
+
+  /* ===== 牌桌区（占据剩余全部高度） ===== */
+  .table {
+    flex: 1 1 auto;
+    position: relative;
+    min-height: 0; /* flex 子项允许收缩，否则内容会顶出容器 */
+
+    /* 瞄准状态：头像加虚线框 + 十字光标，点空白处取消 */
+    &.aiming {
+      [data-pid] {
+        cursor: crosshair;
+        outline: 2px dashed rgba(255, 255, 255, 0.9);
+        outline-offset: 3px;
+        border-radius: 12px;
+        animation: aimPulse 1.1s ease-in-out infinite;
+      }
+    }
+  }
+
+  /* ===== 桌面本体：一大块暖色椭圆，底部故意超出容器被裁掉 ===== */
+  .tableSurface {
+    position: absolute;
+    left: 50%;
+    top: 11%;
+    transform: translateX(-50%);
+    width: 94%;
+    height: 102%;
+    border-radius: 50% / 22%;
+    box-sizing: border-box;
+    /* 木框 + 内侧压边，做出"桌面是凹下去"的层次 */
+    border: 11px solid #b58048;
+    background: radial-gradient(
+      ellipse at 50% 8%,
+      #fdf7e6 0%,
+      #f9ead0 22%,
+      #f1dbb2 48%,
+      #e3c28d 74%,
+      #d0a469 100%
+    );
+    box-shadow:
+      inset 0 0 0 3px rgba(255, 255, 255, 0.55),
+      inset 0 0 0 15px rgba(150, 102, 48, 0.09),
+      inset 0 18px 60px rgba(146, 100, 45, 0.22),
+      0 16px 40px rgba(80, 48, 10, 0.3);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* 桌面中央的品牌水印 + 房间信息 */
+  .tableBrand {
+    position: absolute;
+    left: 50%;
+    top: 17%;
+    transform: translateX(-50%);
+    text-align: center;
+    pointer-events: none;
     user-select: none;
+    white-space: nowrap;
+    z-index: 1;
+
+    .brandTitle {
+      font-size: clamp(20px, 4.2vw, 44px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: 0.14em;
+      color: rgba(150, 102, 48, 0.17);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    .brandSub {
+      margin-top: 5px;
+      font-size: clamp(10px, 1.4vw, 13px);
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: rgba(150, 102, 48, 0.42);
+    }
+  }
+
+  @keyframes aimPulse {
+    0%,
+    100% {
+      outline-color: rgba(255, 255, 255, 0.9);
+    }
+    50% {
+      outline-color: rgba(255, 214, 102, 0.95);
+    }
+  }
+
+  /* ===== 右侧竖排工具栏：图标 + 文字标签（参考手游牌桌右下角） ===== */
+  .toolBar {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 9;
+
+    .toolItem {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+
+    .toolBtn {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.78);
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.96) 0%,
+        rgba(255, 252, 240, 0.84) 100%
+      );
+      box-shadow: 0 3px 10px rgba(90, 55, 15, 0.3);
+      font-size: 21px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+      &:hover {
+        transform: translateY(-2px) scale(1.04);
+        box-shadow: 0 6px 14px rgba(90, 55, 15, 0.34);
+      }
+
+      &:active {
+        transform: scale(0.94);
+      }
+
+      /* 已选中待投掷：金色高亮 + 呼吸 */
+      &.on {
+        border-color: #ffd24d;
+        background: linear-gradient(180deg, #fff6d6 0%, #ffe9a8 100%);
+        box-shadow:
+          0 0 0 3px rgba(255, 210, 77, 0.55),
+          0 3px 10px rgba(90, 55, 15, 0.3);
+        animation: funPulse 1s ease-in-out infinite;
+      }
+    }
+
+    .toolLabel {
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(90, 55, 15, 0.7);
+      white-space: nowrap;
+    }
+
+    .aimHint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 12px;
+      background: rgba(40, 24, 8, 0.62);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      animation: hintIn 0.2s ease-out;
+
+      .aimCancel {
+        border: none;
+        background: rgba(255, 255, 255, 0.26);
+        color: #fff;
+        font-size: 11px;
+        padding: 2px 7px;
+        border-radius: 8px;
+        cursor: pointer;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.4);
+        }
+      }
+    }
+  }
+
+  @keyframes funPulse {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 0 rgba(255, 210, 77, 0.7),
+        0 3px 10px rgba(90, 55, 15, 0.3);
+    }
+    50% {
+      box-shadow:
+        0 0 0 8px rgba(255, 210, 77, 0),
+        0 3px 10px rgba(90, 55, 15, 0.3);
+    }
+  }
+
+  @keyframes hintIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 准备阶段被砸中的头像：抖一下 */
+  .hitShake {
+    animation: hitShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  @keyframes hitShake {
+    0%,
+    100% {
+      transform: translateX(0) rotate(0deg);
+    }
+    15% {
+      transform: translateX(-7px) rotate(-6deg);
+    }
+    30% {
+      transform: translateX(6px) rotate(5deg);
+    }
+    45% {
+      transform: translateX(-5px) rotate(-4deg);
+    }
+    60% {
+      transform: translateX(4px) rotate(3deg);
+    }
+    80% {
+      transform: translateX(-2px) rotate(-1deg);
+    }
+  }
+
+  /* 底牌：顶部居中 */
+  .aHand {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 10px;
+    --card-w: var(--table-card-w);
+    --card-h: var(--table-card-h);
+    /* 底牌不叠，整张都露出来 */
+    --card-exposed: var(--card-w);
+    z-index: 5;
+
+    .aHandLabel {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.85);
+      margin-right: 4px;
+      writing-mode: vertical-rl;
+      letter-spacing: 1px;
+    }
+  }
+
+  /* 出牌区：牌桌正中，只放「当前这一手」
+     —— 不再把整局出牌历史纵向堆进来，所以不需要滚动，
+     也就不会出现最底下一张被 max-height 裁掉半截的问题。 */
+  .roundCardList {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    /* 一轮里每家一组：横向排开，放不下自动换行 */
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: center;
+    column-gap: 12px;
+    row-gap: 8px;
+    /* ⚠️ 和 .prepare 同一个坑：绝对定位 + left:50% 时 width 是 auto，
+       可用宽度只剩容器的一半（320 屏约 150px），三组牌会被迫折成三行。
+       显式 max-content 让内容决定宽度，再由 max-width 兜住窄屏。 */
+    width: max-content;
+    max-width: calc(100% - 20px);
+    padding: 6px 10px 8px;
+    --card-w: var(--table-card-w);
+    --card-h: var(--table-card-h);
+    /* 出牌区横向重叠 34%，露出 66%（见 .roundCardRow 的 margin-right） */
+    --card-exposed: calc(var(--card-w) * 0.66);
+    z-index: 4;
+    /* 纯展示，不吃点击：瞄准道具时点空白处仍能取消 */
+    pointer-events: none;
+    animation: cardDrop 0.26s ease-out;
+
+    /* 一组 = 一家的「昵称 + 牌」 */
+    .roundGroup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      flex: 0 0 auto;
+      max-width: 100%;
+    }
+
+    /* 出牌者昵称：独立一行居中，牌从同一个起点排，
+       不会因为昵称长短把牌行挤得参差不齐 */
+    .roundCardUser {
+      max-width: 100%;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      /* 桌面是浅米色，白字太淡，改成深棕 + 白色高光 */
+      color: rgba(88, 56, 18, 0.85);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 「不要」：做成矮一点的虚线胶囊，和旁边真出的牌区分开 */
+    .roundPass {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: calc(var(--card-h) * 0.52);
+      min-width: calc(var(--card-w) * 0.9);
+      padding: 0 8px;
+      border: 1px dashed rgba(88, 56, 18, 0.4);
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.32);
+      color: rgba(88, 56, 18, 0.66);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    /* 一手最多 20 张（飞机带翅膀），横向重叠着摆，永远不溢出牌桌 */
+    .roundCardRow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      > div {
+        margin-right: calc(var(--card-w) * -0.34);
+        flex: 0 0 auto;
+      }
+      > div:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+
+  @keyframes cardDrop {
+    from {
+      opacity: 0;
+      transform: translateY(-14px) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* 回合提示：牌桌中央，告诉用户在等谁
+     只在 roundCard 为空（新一轮起手）时出现，和中央出牌区互斥，不会叠 */
+  .turnHint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 8px 18px;
+    border-radius: 18px;
+    background: rgba(64, 40, 12, 0.5);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: calc(100vw - 40px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 3;
+    animation: hintFade 0.3s ease-out;
+
+    &.mine {
+      background: rgba(255, 214, 102, 0.92);
+      color: #6b4a00;
+      box-shadow: 0 0 0 3px rgba(255, 214, 102, 0.35);
+      animation:
+        hintFade 0.3s ease-out,
+        hintPulse 1.6s ease-in-out infinite;
+    }
+  }
+
+  @keyframes hintFade {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  /* 「不要」浮标：放在出牌区正上方，1.8 秒后消失。
+     服务端处理「不要」时不改动 round，牌桌上什么都不会变，
+     不提示的话玩家根本不知道对家是过牌了还是在卡住。 */
+  .passTip {
+    position: absolute;
+    top: calc(50% - 92px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 14px;
+    border-radius: 14px;
+    background: rgba(64, 40, 12, 0.55);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 4;
+    animation: passIn 0.22s ease-out;
+  }
+
+  @keyframes passIn {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 8px) scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+  }
+
+  @keyframes hintPulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 3px rgba(255, 214, 102, 0.35);
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgba(255, 214, 102, 0);
+    }
+  }
+
+  /* ===== 玩家头像区（定位细节见 playerHeader.module.less） ===== */
+  .playerHeaderList {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  /* ===== 准备阶段 ===== */
+  .prepare {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    /* ⚠️ 绝对定位 + left:50% 时 width 是 auto，可用宽度只剩「容器宽度的一半」，
+       手机上面板会被压到 ~195px，三个座位只能竖着堆。
+       显式写 max-content 让它按内容撑开，再由 max-width 兜住窄屏。 */
+    width: max-content;
+    padding: 20px 22px;
+    /* 深色玻璃面板：和桌面暖色调统一，白卡在新版桌上太跳 */
+    background: rgba(24, 38, 26, 0.42);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    box-shadow: 0 10px 32px rgba(70, 42, 10, 0.3);
+    max-width: calc(100vw - 32px);
+    z-index: 10;
+
+    /* 跑得快规则提示：整行换行，不挤在三个座位中间 */
+    .pdkRule {
+      flex: 0 0 100%;
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.72);
+      letter-spacing: 0.2px;
+      margin-top: 2px;
+    }
+
+    .item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      min-width: 76px;
+
+      /* 头像 + 移除按钮的定位容器 */
+      .avatarSlot {
+        position: relative;
+        display: flex;
+      }
+
+      /* 房主移除 AI */
+      .removeAi {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 22px;
+        height: 22px;
+        padding: 0 0 1px;
+        border-radius: 50%;
+        border: 1.5px solid #fff;
+        background: #e24b4a;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+        transition: transform 0.15s ease, background 0.15s ease;
+
+        &:hover {
+          background: #c93b3a;
+          transform: scale(1.1);
+        }
+
+        &:active {
+          transform: scale(0.94);
+        }
+      }
+
+      .name {
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        max-width: 88px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      /* 空位：虚线占位 */
+      &.empty .name {
+        color: rgba(255, 255, 255, 0.5);
+        font-weight: 400;
+      }
+
+      /* 座位上的积分 */
+      .seatScore {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #ffe08a;
+        line-height: 1;
+        margin-top: -4px;
+      }
+
+      .seatCoin {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 32% 28%,
+          #fff6c8 0%,
+          #ffd24d 46%,
+          #dd9a12 100%
+        );
+      }
+    }
+
+    .emptySlot {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 2px dashed rgba(255, 255, 255, 0.42);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 22px;
+      box-sizing: border-box;
+    }
+  }
+
+  /* ===== 底部：操作按钮 + 手牌 ===== */
+  .myContent {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 15;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+
+    .btnBox {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      /* 必须等于「按钮高 40 + 上下 padding 12」。
+         否则轮到别人时按钮整块消失，高度回落到 min-height，
+         牌桌（flex:1）就跟着长高几像素，背景椭圆和水印肉眼可见地抖一下。 */
+      min-height: 52px;
+      padding: 4px 10px 8px;
+
+      /* 非房主在准备阶段看到的提示 */
+      .waitHint {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.88);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+        padding: 0 12px;
+        text-align: center;
+      }
+
+      /* 移动端按钮加大触控区域 */
+      :global(.ant-btn) {
+        height: 40px;
+        padding: 0 20px;
+        font-size: 15px;
+        border-radius: 20px;
+        font-weight: 600;
+      }
+    }
+
+    .cardList {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      padding: calc(var(--card-w) * 0.3) 8px 6px;
+      min-height: calc(var(--card-h) + var(--card-w) * 0.3);
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+
+      /* 露出条宽度 = 牌宽 - 重叠量。
+         这里 --card-w / --card-gap 都是内联写在本元素上的最终值，
+         所以在这层写 calc 是安全的（不会像在 .page 上那样被提前算死）。
+         点数字号要靠它来算，否则两位数的「10」会被右边那张盖掉一半。 */
+      --card-exposed: calc(var(--card-w) + var(--card-gap));
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* 相邻手牌重叠；最后一个不留右边距 */
+      > div {
+        margin-right: var(--card-gap);
+        flex: 0 0 auto;
+      }
+      > div:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+}
+
+/* ===== 窄屏微调 ===== */
+@media (max-width: 480px) {
+  .page {
+    --card-w: clamp(33px, 8.8vw, 44px);
+    /* 手机窄，重叠 60%。牌宽由 JS 按张数写在内联 style 上，这里只是兜底 */
+    --card-gap: calc(var(--card-w) * -0.6);
+    /* 底牌用；出牌区会按张数在自己身上覆盖这个值 */
+    --table-card-w: clamp(26px, 7vw, 34px);
+
+    .topBar {
+      padding: 8px 10px;
+
+      .roomInfo {
+        font-size: 12px;
+      }
+    }
+
+    .myContent {
+      .btnBox {
+        /* 按钮 38 + 上下 padding 12，和上面同理，避免出牌时高度跳变 */
+        min-height: 50px;
+
+        :global(.ant-btn) {
+          height: 38px;
+          padding: 0 16px;
+          font-size: 14px;
+        }
+      }
+    }
+
+    /* 窄屏工具栏压缩，避免占掉半个牌桌 */
+    .toolBar {
+      right: 5px;
+      bottom: 5px;
+      gap: 7px;
+
+      .toolBtn {
+        width: 38px;
+        height: 38px;
+        font-size: 18px;
+      }
+
+      .toolLabel {
+        font-size: 9px;
+      }
+
+      .aimHint {
+        font-size: 10px;
+        padding: 4px 7px;
+      }
+    }
+
+    .tableBrand {
+      top: 13%;
+
+      .brandSub {
+        letter-spacing: 0.08em;
+      }
+    }
+
+    /* 窄高屏上 50%/22% 会变成"胶囊"，压扁弧度更像牌桌 */
+    .tableSurface {
+      top: 7%;
+      height: 106%;
+      border-width: 8px;
+      border-radius: 38% / 11%;
+    }
+  }
+}
+
+/* ===== 超窄屏（iPhone SE 一代 / 老安卓 320 宽）=====
+   准备面板里三个座位各占 min-width 76 + gap 14，加上左右 padding 一共要 300px，
+   320 屏只剩 288 可用，第三个座位会被挤到第二行。这里把座位和间距一起收窄，
+   让它重新回到一行。 */
+@media (max-width: 360px) {
+  .page {
+    .prepare {
+      gap: 8px;
+      padding: 16px 12px;
+
+      .item {
+        min-width: 58px;
+        gap: 6px;
+      }
+    }
+  }
+}
+
+/* ===== 矮屏（横屏手机 / 小笔记本）压缩纵向留白 ===== */
+@media (max-height: 620px) {
+  .page {
+    --card-w: clamp(30px, 5vw, 46px);
+
+    .topBar {
+      padding: 6px 12px;
+    }
+
+    .aHand {
+      top: 4px;
+      padding: 3px 8px;
+    }
+
+    .myContent {
+      .btnBox {
+        min-height: 40px;
+        padding: 2px 8px 4px;
+
+        :global(.ant-btn) {
+          height: 34px;
+          font-size: 13px;
+          padding: 0 14px;
+        }
+      }
+      .cardList {
+        padding-top: calc(var(--card-w) * 0.26);
+      }
+    }
+
+    /* 矮屏没那么多纵向空间：工具栏改横排、去掉文字标签 */
+    .toolBar {
+      flex-direction: row;
+      right: 8px;
+      bottom: 4px;
+      gap: 8px;
+
+      .toolBtn {
+        width: 36px;
+        height: 36px;
+        font-size: 17px;
+      }
+
+      .toolLabel {
+        display: none;
+      }
+    }
+
+    .tableSurface {
+      top: 6%;
+      border-width: 8px;
+    }
+
+    .tableBrand {
+      top: 10%;
+    }
+  }
+}
+
+* {
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ==========================================================================
+ * 快捷语音面板（Popover 内容）
+ *
+ * ⚠️ 必须写在 .page 外面。
+ * antd 的 Popover 会把内容渲染到 document.body 的 portal 里，
+ * 不在 .page 的 DOM 子树中；如果把这些类嵌套进 .page，
+ * 编译出来是 `.page .chatPanel`，在 portal 里匹配不到，样式全部失效
+ * （表现为面板被拉成一整行横穿屏幕）。
+ * ========================================================================== */
+.chatPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(260px, 70vw);
+  max-height: 46vh;
+  overflow-y: auto;
+
+  .chatItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    font-size: 13px;
+    color: #2f3b2a;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: #eef7e8;
+    }
+
+    &:active {
+      background: #e0f0d6;
+    }
+
+    .chatIcon {
+      flex-shrink: 0;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .chatText {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
 }

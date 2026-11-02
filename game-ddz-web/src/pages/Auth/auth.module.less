@@ -1,0 +1,119 @@
+/**
+ * 登录 / 注册页
+ * 背景与大厅保持一致，卡片居中；移动端全宽但留边距。
+ */
+
+.page {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: radial-gradient(ellipse at 50% 0%, #9ede74 0%, #63b84f 52%, #3f8b36 100%);
+
+  .card {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.97);
+    border-radius: 18px;
+    padding: 26px 22px 18px;
+    box-sizing: border-box;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+
+    /* ===== 品牌区 ===== */
+    .brand {
+      text-align: center;
+      margin-bottom: 6px;
+
+      .suits {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 19px;
+        line-height: 1;
+        color: #2f5d2a;
+
+        .red {
+          color: #d4380d;
+        }
+      }
+
+      .title {
+        margin: 10px 0 4px;
+        font-size: 23px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #2f5d2a;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 13px;
+        color: #7a8a76;
+      }
+    }
+
+    /* ===== 表单 ===== */
+    :global(.ant-tabs-nav) {
+      margin-bottom: 14px;
+    }
+
+    :global(.ant-tabs-tab) {
+      font-size: 15px;
+      padding: 8px 4px;
+    }
+
+    :global(.ant-form-item) {
+      margin-bottom: 14px;
+    }
+
+    :global(.ant-form-item-label > label) {
+      font-size: 13px;
+      color: #55614f;
+    }
+
+    .submit {
+      height: 46px;
+      margin-top: 4px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 10px;
+    }
+
+    .tip {
+      margin: 14px 0 0;
+      text-align: center;
+      font-size: 13px;
+      color: #7a8a76;
+
+      a {
+        margin-left: 4px;
+        color: #3f8b36;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  /* iOS 上输入框字号小于 16px 会触发页面自动放大 */
+  @media (max-width: 480px) {
+    padding: 16px 12px calc(16px + env(safe-area-inset-bottom));
+
+    .card {
+      padding: 22px 16px 14px;
+
+      :global(.ant-input),
+      :global(.ant-input-affix-wrapper input) {
+        font-size: 16px;
+      }
+    }
+  }
+}

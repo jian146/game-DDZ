@@ -1,13 +1,134 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web-app</title>
+
+    <!--
+      viewport-fit=cover  刘海屏 / 挖孔屏铺满，配合 env(safe-area-inset-*) 避让
+      user-scalable=no    游戏页禁止双指缩放，避免误触把牌桌放大
+      theme-color         移动端浏览器地址栏配色，和牌桌绿色统一
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#3f8b36" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <title>斗地主</title>
+
+    <!--
+      首屏骨架（内联，零外部依赖）
+      ------------------------------------------------------------------
+      为什么不写在 React 里：
+      打包后的 JS gzip 还有 300KB+，手机走公网时下载 + 解析要好几秒。
+      这段时间 #root 是空的，用户看到的就是一片纯色空屏 —— 分不清是在
+      加载还是已经卡死。骨架内联在 HTML 里，浏览器拿到文档的第一帧就能画出来，
+      而且 html/body 的背景色也内联写死，不依赖外部 CSS 加载完成。
+
+      消失机制（不需要任何 JS）：
+        #splash 是 #root 的**兄弟节点**，一旦 #root 里渲染出东西就隐藏。
+        为什么不把骨架塞进 #root 里：
+        路由首帧是 `/ → /room → /login` 两次 Navigate，中间会渲染 null，
+        #root 会被清空成空树，骨架如果放在里面就跟着消失，
+        用户会看到「骨架闪一下 → 纯色空屏 1 秒 → 登录页」。
+        放在外面并靠 `#root:not(:empty) ~ #splash` 控制，空树期间骨架一直挂着，
+        直到真正的内容（或 React 的 Suspense 兜底）出现才隐藏。
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #3f8b36;
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #root {
+        height: 100%;
+      }
+
+      #splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background: radial-gradient(
+          ellipse at 50% 0%,
+          #9ede74 0%,
+          #63b84f 52%,
+          #3f8b36 100%
+        );
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+          "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+        user-select: none;
+      }
+      /* #root 一旦有内容（哪怕是 React 的加载兜底），骨架就让位 */
+      #root:not(:empty) ~ #splash {
+        display: none;
+      }
+      #splash .sp-suits {
+        font-size: 20px;
+        letter-spacing: 10px;
+        text-indent: 10px;
+        line-height: 1;
+        opacity: 0.92;
+      }
+      #splash .sp-suits .red {
+        color: #ffd7c9;
+      }
+      #splash .sp-title {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+      }
+      #splash .sp-spin {
+        width: 26px;
+        height: 26px;
+        margin-top: 6px;
+        box-sizing: border-box;
+        border: 3px solid rgba(255, 255, 255, 0.28);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: sp-rotate 0.8s linear infinite;
+      }
+      #splash .sp-tip {
+        font-size: 13px;
+        opacity: 0.82;
+        letter-spacing: 1px;
+      }
+      @keyframes sp-rotate {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      /* 开了「减少动态效果」就不转圈 */
+      @media (prefers-reduced-motion: reduce) {
+        #splash .sp-spin {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="splash">
+      <div class="sp-suits" aria-hidden="true">
+        <span class="red">♥</span><span>♠</span><span class="red">♦</span><span>♣</span>
+      </div>
+      <div class="sp-title">欢乐斗地主</div>
+      <div class="sp-spin" aria-hidden="true"></div>
+      <div class="sp-tip">正在加载…</div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

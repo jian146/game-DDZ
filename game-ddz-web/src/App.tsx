@@ -1,21 +1,14 @@
-// import {Link} from "react-router-dom"
-import {useRoutes} from "react-router-dom"
-import {routes} from "./router"
+import { Suspense } from "react"
+import { useRoutes } from "react-router-dom"
+import { routes } from "./router"
+import PageLoading from "./components/pageLoading/pageLoading"
 
 function App() {
   const element = useRoutes(routes)
 
   return (
-    <div>
-      {/* <nav style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-        <Link to="/">Home</Link>
-        <Link to="/about">About</Link>
-        <Link to="/user/list">User List</Link>
-        <Link to="/user/detail">User Detail</Link>
-      </nav> */}
-
-      {element}
-    </div>
+    // 路由是 lazy 的，chunk 没到位时显示加载页（视觉和 index.html 的首屏骨架一致）
+    <Suspense fallback={<PageLoading />}>{element}</Suspense>
   )
 }
 

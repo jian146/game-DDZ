@@ -1,43 +1,148 @@
-.cardBox{
-    height: 80px;
-    width: 60px;
-    border-radius: 6px;
-    background-color: rgba(255,255,255,0.8);
-    margin-right:5px;
-    color:black;
-    // box-shadow: 5px 5px 15px rgba(0,0,0,0.2);    
-    // box-shadow: rgb(0 0 0 / 20%) 0 0 0 1px, rgb(0 0 0 / 45%) 0 3px 10px;  
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-    position: relative;
-    cursor: pointer;
-    .cardName{
-        position: relative;
-        padding-top: 3px;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: start;
-        padding-left: 6px;
-        line-height: 1;        
-    }
-    .content{
-        position:absolute;
-        bottom: 0;
-        width: 100%;
-        padding-bottom: 5px;
-        .jokerContent{
-            font-size: 22px;
-            padding-bottom: 16px;;
-        }
-    }
+/**
+ * 卡牌尺寸完全由父级 CSS 变量驱动：
+ *   --card-w  牌宽
+ *   --card-h  牌高
+ * 父容器（.cardList / .aHand / .roundCardList）按屏幕宽度设置变量，
+ * 这里只负责按比例换算字号，不做任何媒体查询。
+ */
+.cardBox {
+  width: var(--card-w, 60px);
+  height: var(--card-h, 80px);
+  border-radius: calc(var(--card-w, 60px) * 0.1);
+  background-color: #fff;
+  color: #1a1a1a;
+  margin-right: 0;
+  position: relative;
+  flex: 0 0 auto;
+  cursor: pointer;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.18),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.04);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
 
+  /* 牌面本身不接点击，全部交给下面的 .cardHit 热区。
+     叠牌时每张牌被后一张盖住右边一大截，如果整张牌都接点击，
+     选中牌提到最上层后会把旁边牌露出的点数区一起挡住。 */
+  pointer-events: none;
+
+  /* 左上角：点数 + 花色
+     ⚠️ 字号不能只看牌宽。叠牌时每张牌只露出左边一条（--card-exposed），
+     字号按牌宽 0.34 算的话，「10」这种两位数宽约 1.1em = 16px，
+     而 390 屏 20 张牌时露出条只有 17px，右半截直接被下一张盖掉，
+     屏幕上显示成「1(」。所以取 min(牌宽比例, 露出条比例)。 */
+  .cardName {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: calc(var(--card-w, 60px) * 0.06) 0 0
+      min(calc(var(--card-w, 60px) * 0.1), calc(var(--card-exposed, 9999px) * 0.08));
+    line-height: 1;
+    font-size: min(
+      calc(var(--card-w, 60px) * 0.34),
+      calc(var(--card-exposed, 9999px) * 0.72)
+    );
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  /* 中间大花色 */
+  .content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: calc(var(--card-w, 60px) * 0.06);
+    font-size: calc(var(--card-w, 60px) * 0.72);
+    line-height: 1;
+    pointer-events: none;
+
+    .jokerContent {
+      font-size: calc(var(--card-w, 60px) * 0.4);
+      font-weight: 800;
+      padding-bottom: calc(var(--card-w, 60px) * 0.18);
+      white-space: nowrap;
+    }
+  }
+
+  /* 大小王是竖排文字，宽度 ≈ 一个字号。同样要卡住露出条，
+     否则 390 屏 17 张牌（露出 20px）时「大王」右边缘会超出 1px 被盖掉。 */
+  .joker {
+    font-size: min(
+      calc(var(--card-w, 60px) * 0.3),
+      calc(var(--card-exposed, 9999px) * 0.62)
+    );
+    font-weight: 800;
+    writing-mode: vertical-rl;
+    letter-spacing: 1px;
+  }
+
+  /* 按压缩放效果去掉了：
+     牌本身 pointer-events: none，:active 命中不到；
+     用 :has(:active) 反推的话特异性高于 .active，
+     会把选中态的抬起位移覆盖掉，按下时牌会往回掉一下。 */
 }
-.redColor{
-    color:red;
+
+/**
+ * 点击热区
+ *
+ * 宽度 = 牌宽 + 重叠量。--card-gap 是负数（例如 -0.44 * 牌宽），
+ * 所以算出来正好是这张牌「露在外面」的那一条，相邻牌的热区互不重叠。
+ * 于是点哪儿就选哪张，跟视觉上看到的完全一致，跟 z-index 无关。
+ */
+.cardHit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  /* 用 --card-w 而不是 100%：100% 是 padding box（已扣掉两侧 1px 边框），
+     逐张累积会留出 2px 的点击缝隙。 */
+  width: calc(var(--card-w, 60px) + var(--card-gap, 0px));
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
 }
-.active{
-    top: -20px;
+
+/* 最后一张牌右边没有东西盖住它，整张都能点 */
+.cardBox:last-child > .cardHit {
+  width: var(--card-w, 60px);
+}
+
+.redColor {
+  color: #e53935;
+}
+
+/* 选中：抬起 + 描边高亮 */
+.active {
+  transform: translateY(calc(var(--card-w, 60px) * -0.26));
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.28),
+    0 0 0 2px #ffd43b;
+
+  /* ⚠️ 这里不能写 z-index。
+     叠牌时每张牌只露出左边一条（--card-w + --card-gap ≈ 54% 牌宽），
+     靠的就是「后渲染的盖住前一张的右半截」这个 DOM 顺序。
+     一旦给选中牌加 z-index 把它提到最上层，它的**整张牌身**就会盖住
+     右边那张牌露出的点数区：实测中间那张 25px 的热区被盖掉 20px，
+     只剩 5px 露在外面。左右两张都选中时，中间这张基本等于消失，
+     既看不清点数也点不准 —— 这就是「左右夹击点不到」的根因。
+     抬起 + 描边已经足够表达选中态，层叠顺序交还给 DOM。 */
+}
+
+/* 出牌区 / 底牌里的牌不可点，去掉 hover 抬升 */
+.noPointer {
+  cursor: default;
+  &:active {
+    transform: none;
+  }
 }

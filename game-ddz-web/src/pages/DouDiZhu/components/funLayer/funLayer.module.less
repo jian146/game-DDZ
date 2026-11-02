@@ -1,0 +1,195 @@
+/**
+ * 互动特效层（投掷道具 / 语音气泡）
+ *
+ * 整层是 fixed + pointer-events:none，纯展示，不参与牌桌点击。
+ * 位置全部由 JS 按头像的 getBoundingClientRect 现算，所以这里只写动画。
+ */
+
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* 以目标点为中心的锚点，具体元素在里面做动画 */
+.anchor {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+/* ===== 飞行中的道具 ===== */
+.projectile {
+  font-size: 26px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+  animation: fly 600ms cubic-bezier(0.34, 0.02, 0.62, 1) forwards;
+}
+
+@keyframes fly {
+  0% {
+    transform: translate(0, 0) scale(0.45) rotate(0deg);
+    opacity: 0.9;
+  }
+  /* 中途抬高一点，走出抛物线的手感 */
+  55% {
+    transform: translate(calc(var(--dx) * 0.55), calc(var(--dy) * 0.55 - 46px))
+      scale(1) rotate(300deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.92) rotate(560deg);
+    opacity: 1;
+  }
+}
+
+/* ===== 落地爆开 ===== */
+.splat {
+  font-size: 30px;
+  line-height: 1;
+  animation: splatPop 520ms ease-out forwards;
+}
+
+@keyframes splatPop {
+  0% {
+    transform: scale(0.4) rotate(-12deg);
+    opacity: 1;
+  }
+  35% {
+    transform: scale(1.65) rotate(8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.1) rotate(0deg);
+    opacity: 0;
+  }
+}
+
+/* 冲击波圆环 */
+.ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  animation: ringOut 460ms ease-out forwards;
+}
+
+@keyframes ringOut {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+/* 四散的碎屑 */
+.drop {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: #e8503a;
+  animation: dropOut 520ms ease-out forwards;
+}
+
+.drop:nth-child(2n) {
+  background: #f5c33b;
+}
+
+.drop:nth-child(3n) {
+  background: #fff6e0;
+}
+
+@keyframes dropOut {
+  0% {
+    transform: rotate(var(--angle)) translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--angle)) translateY(-46px) scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* ===== 语音气泡 ===== */
+.bubbleAnchor {
+  position: fixed;
+  /* 从锚点往上挪，压在头像上方 */
+  transform: translate(-50%, -150%);
+  animation: bubbleIn 2.6s ease-out forwards;
+}
+
+.bubble {
+  max-width: min(240px, 62vw);
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: #fff;
+  color: #2f3b2a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  position: relative;
+  word-break: break-word;
+
+  /* 小尾巴指向头像 */
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    width: 12px;
+    height: 12px;
+    margin-left: -6px;
+    background: #fff;
+    transform: rotate(45deg);
+    border-radius: 2px;
+  }
+}
+
+@keyframes bubbleIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -120%) scale(0.7);
+  }
+  8% {
+    opacity: 1;
+    transform: translate(-50%, -150%) scale(1.04);
+  }
+  14% {
+    transform: translate(-50%, -150%) scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, -150%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -165%) scale(0.96);
+  }
+}
+
+@media (max-width: 480px) {
+  .projectile {
+    font-size: 22px;
+  }
+  .splat {
+    font-size: 26px;
+  }
+  .bubble {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}

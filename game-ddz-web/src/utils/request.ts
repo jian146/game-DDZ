@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
 import { notification } from 'antd'
+import { getToken } from './storage'
 
 const codeMessage: Record<number, string> = {
   200: '服务器成功返回请求的数据。',
@@ -33,7 +34,8 @@ const errorHandler = (error: AxiosError) => {
 
     // token 校验失败
     if (status === 401 || status === 402 || status === 403) {
-      // TODO: token 过期处理，例如跳登录
+      // 登录态失效属于预期内情况，静默交给调用方处理（避免一进页面就弹红框）
+      return
     } else if (status >= 500) {
       notification.error({
         message: '服务器异常',
@@ -64,10 +66,11 @@ const newRequest = async ({
   url = '',
   options = {},
 }: RequestProp) => {
+  const token = getToken()
   const instance = axios.create({
     withCredentials: true,
     headers: {
-      // token: `${withToken && getToken() ? getToken() : ''}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   })

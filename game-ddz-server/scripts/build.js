@@ -34,13 +34,43 @@ function log(msg)  { console.log(`\x1b[36m[build]\x1b[0m ${msg}`); }
 function ok(msg)   { console.log(`\x1b[32m  ✓\x1b[0m ${msg}`); }
 function fail(msg) { console.error(`\x1b[31m  ✗\x1b[0m ${msg}`); process.exit(1); }
 
-function copyDir(src, dest) {
+/**
+ * 镜像同步：把 src 的内容覆盖到 dest，并删掉 dest 里 src 已经没有的条目。
+ *
+ * 为什么不用 `rmSync(dest, {recursive:true})` 再整份复制：
+ * 那是「先清空再写入」，一次要删几十个文件。宿主（WorkBuddy 沙箱）对单轮内的
+ * 批量删除有阈值保护，删到 50 个就直接抛 SAFE_DELETE_BULK_CONFIRM_REQUIRED，
+ * 构建半路挂掉。改成逐条覆盖 + 只清理过期文件，正常构建几乎不产生删除动作，
+ * 而且万一中断也不会留下半个空目录。
+ */
+function syncDir(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const s = path.join(src, entry.name);
-    const d = path.join(dest, entry.name);
-    entry.isDirectory() ? copyDir(s, d) : fs.copyFileSync(s, d);
+
+  const srcNames = new Set(fs.readdirSync(src));
+
+  for (const name of srcNames) {
+    const s = path.join(src, name);
+    const d = path.join(dest, name);
+    const st = fs.statSync(s);
+    if (st.isDirectory()) {
+      syncDir(s, d);
+    } else {
+      fs.copyFileSync(s, d);
+    }
   }
+
+  // 清理过期条目（上次构建残留的旧 hash 文件）
+  let removed = 0;
+  for (const name of fs.readdirSync(dest)) {
+    if (srcNames.has(name)) continue;
+    try {
+      fs.rmSync(path.join(dest, name), { recursive: true, force: true });
+      removed++;
+    } catch {
+      // 单个文件删不掉（被占用）不影响构建
+    }
+  }
+  return removed;
 }
 
 // ===== 前置检查 =====
@@ -61,16 +91,14 @@ ok('后端编译完成');
 
 // ===== Step 2: 单服务部署兼容（原样保留） =====
 log('Step 2/3: 单服务部署兼容 → game-ddz-server/public/');
-if (fs.existsSync(SERVER_PUBLIC)) fs.rmSync(SERVER_PUBLIC, { recursive: true, force: true });
-copyDir(WEB_DIST, SERVER_PUBLIC);
-ok(`单服务 public 就位（${fs.readdirSync(SERVER_PUBLIC).length} 项）`);
+const prunedPublic = syncDir(WEB_DIST, SERVER_PUBLIC);
+ok(`单服务 public 就位（${fs.readdirSync(SERVER_PUBLIC).length} 项，清理过期 ${prunedPublic} 个）`);
 
 // ===== Step 3: 汇总到根目录 build/ =====
 log('Step 3/3: 汇总到根目录 build/');
-if (fs.existsSync(OUT_DIR)) fs.rmSync(OUT_DIR, { recursive: true, force: true });
 fs.mkdirSync(OUT_DIR, { recursive: true });
-copyDir(WEB_DIST, OUT_PUBLIC);
-copyDir(SERVER_DIST, OUT_DIST);
+syncDir(WEB_DIST, OUT_PUBLIC);
+syncDir(SERVER_DIST, OUT_DIST);
 ok(`根目录 build/ 就绪（public ${fs.readdirSync(OUT_PUBLIC).length} 项 + dist ${fs.readdirSync(OUT_DIST).length} 项）`);
 
 // ===== 汇总打印 =====

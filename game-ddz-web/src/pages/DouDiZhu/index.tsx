@@ -1,28 +1,39 @@
-import { getUserInfo, setUserInfo } from "@/utils/user"
-
-import { Modal, Form, Button, Avatar, Input, message, List, Tag, Empty, Spin } from "antd"
-
-import { useState, useEffect, useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { Button, Empty, List, message, Popconfirm, Segmented, Spin } from "antd"
+import { useNavigate } from "react-router-dom"
 import styles from "./index.module.less"
 import newRequest from "@/utils/request"
 import type { I_roomData } from "./douDiZhu"
-import moment from "moment"
-import { useNavigate } from "react-router-dom"
+import PlayerAvatar from "@/components/playerAvatar/playerAvatar"
+import { playSound, sound } from "@/utils/sound"
+import { apiMe, getPlayer, logout, type I_Player } from "@/utils/auth"
+
+/** 玩法：斗地主 / 跑得快 */
+type T_Mode = "ddz" | "pdk"
+
+const MODE_LABEL: Record<T_Mode, string> = {
+  ddz: "斗地主",
+  pdk: "跑得快",
+}
+
+/**
+ * 房间号就是创建时间戳，这里只用来显示「MM-DD HH:mm」。
+ * 之前引了 moment —— 为了格式化一个日期，多打进去 70KB，不值。
+ */
+const formatRoomTime = (ts: number) => {
+  const d = new Date(ts)
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
 
 const RoomPage = () => {
   const navigate = useNavigate()
-  const [userName, setUserName] = useState<string>()
-  const [isShowName, setIsShowName] = useState(false)
+  // 先用本地缓存渲染，避免首屏空白；随后用服务端数据校准
+  const [player, setPlayer] = useState<I_Player | null>(() => getPlayer())
   const [roomList, setRoomList] = useState<I_roomData[]>([])
   const [loading, setLoading] = useState(false)
-  const [form] = Form.useForm()
-
-  const checkUser = useCallback(() => {
-    const user = getUserInfo()
-    if (user.isLogin) {
-      setUserName(user.userName)
-    }
-  }, [])
+  /** 建房时选的玩法 */
+  const [mode, setMode] = useState<T_Mode>("ddz")
 
   const getRoomList = useCallback(async () => {
     setLoading(true)
@@ -37,159 +48,196 @@ const RoomPage = () => {
     }
   }, [])
 
+  useEffect(() => {
+    let alive = true
+
+    // 校验本地 token 是否还有效，顺便刷新积分（可能刚打完一局回来）
+    apiMe().then((p) => {
+      if (!alive) return
+      if (!p) {
+        message.warning("登录已过期，请重新登录")
+        logout()
+        navigate("/login", { replace: true })
+        return
+      }
+      setPlayer(p)
+    })
+
+    getRoomList()
+    return () => {
+      alive = false
+    }
+  }, [getRoomList, navigate])
+
   const onCreateRoom = async () => {
-    if (!userName) return
+    if (!player) return
+    playSound("click")
     setLoading(true)
     try {
       const res: { isSuccess: boolean; roomId: number } | null =
         await newRequest({
           url: "/api/createRoom",
-          options: {
-            method: "POST",
-            data: { userName },
-          },
+          options: { method: "POST", data: { userName: player.name, mode } },
         })
       if (res && res.isSuccess) {
-        message.success("创建房间成功，正在进入...")
-        navigate(`/ddz/${res.roomId}/${userName}`)
+        message.success(`创建${MODE_LABEL[mode]}房间成功，正在进入...`)
+        navigate(`/ddz/${res.roomId}/${player.name}`)
       }
     } finally {
       setLoading(false)
     }
   }
 
-  const onFinish = (values: { userName: string }) => {
-    const trimmed = values.userName.trim()
-    if (trimmed === "") {
-      message.info("名称不能是空格!")
-      return
-    }
-    setUserName(trimmed)
-    setUserInfo(trimmed)
-    setIsShowName(false)
-    message.success(`欢迎，${trimmed}！`)
-  }
-
   const onJoin = (roomItem: I_roomData) => {
-    if (!userName) {
-      setIsShowName(true)
-      return
-    }
-    navigate(`/ddz/${roomItem.roomId}/${userName}`)
+    if (!player) return
+    playSound("click")
+    navigate(`/ddz/${roomItem.roomId}/${player.name}`)
   }
 
-  useEffect(() => {
-    checkUser()
-    getRoomList()
-  }, [checkUser, getRoomList])
+  const onLogout = () => {
+    playSound("click")
+    logout()
+    message.success("已退出登录")
+    navigate("/login", { replace: true })
+  }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} onPointerDown={() => sound.unlock()}>
+      {/* 顶部账号信息 */}
       <div className={styles.headRow}>
         <div className={styles.user}>
-          <div className={styles.userName}>{userName ?? "未登录"}</div>
+          <PlayerAvatar name={player?.name ?? "游客"} size={52} isOnline />
+
+          <div className={styles.userMeta}>
+            <div className={styles.userName}>{player?.name ?? "未登录"}</div>
+            <div className={styles.userStats}>
+              <span className={styles.score}>{player?.score ?? 0} 分</span>
+              <span className={styles.sep}>·</span>
+              <span>
+                {player?.wins ?? 0} 胜 / {player?.games ?? 0} 局
+              </span>
+            </div>
+          </div>
+
+          <Popconfirm
+            title="退出登录？"
+            description="积分和胜场都已保存在服务器，随时可以回来"
+            okText="退出"
+            cancelText="留下"
+            onConfirm={onLogout}
+          >
+            <Button size="small" danger>
+              退出
+            </Button>
+          </Popconfirm>
         </div>
       </div>
 
       <div className={styles.content}>
-        {userName ? (
-          <div className={styles.roomList}>
-            <Spin spinning={loading}>
-              {roomList.length === 0 ? (
-                <Empty
-                  description="暂无房间"
-                  style={{ padding: "40px 0" }}
-                >
-                  <Button type="primary" onClick={onCreateRoom}>
-                    创建第一个房间
-                  </Button>
-                </Empty>
-              ) : (
-                <List
-                  footer={
-                    <div className={styles.listFooter}>
-                      <Button
-                        onClick={onCreateRoom}
-                        type="primary"
-                        loading={loading}
-                      >
-                        创建房间
-                      </Button>
-                      <Button style={{ marginLeft: 12 }} onClick={getRoomList}>
-                        刷新
-                      </Button>
-                    </div>
-                  }
-                  bordered
-                  dataSource={roomList}
-                  renderItem={(item) => (
+        <div className={styles.roomList}>
+          <div className={styles.listTitle}>
+            <span>房间列表</span>
+            <span className={styles.count}>{roomList.length} 个</span>
+          </div>
+
+          {/* 玩法选择：只影响「创建房间」，加入别人的房间以房间本身为准 */}
+          <div className={styles.modeBar}>
+            <Segmented
+              size="small"
+              value={mode}
+              onChange={(v) => {
+                playSound("click")
+                setMode(v as T_Mode)
+              }}
+              options={[
+                { label: "斗地主", value: "ddz" },
+                { label: "跑得快", value: "pdk" },
+              ]}
+            />
+            <span className={styles.modeHint}>
+              {mode === "pdk"
+                ? "48 张牌 · 能管必须管 · 先出完为胜"
+                : "54 张牌 · 叫地主 · 2 打 1"}
+            </span>
+          </div>
+
+          <Spin spinning={loading}>
+            {roomList.length === 0 ? (
+              <Empty
+                description="暂无房间"
+                style={{ padding: "32px 0" }}
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              >
+                <Button type="primary" onClick={onCreateRoom}>
+                  创建第一个房间
+                </Button>
+              </Empty>
+            ) : (
+              <List
+                footer={
+                  <div className={styles.listFooter}>
+                    <Button
+                      onClick={onCreateRoom}
+                      type="primary"
+                      loading={loading}
+                    >
+                      创建房间
+                    </Button>
+                    <Button onClick={getRoomList}>刷新</Button>
+                  </div>
+                }
+                dataSource={roomList}
+                renderItem={(item) => {
+                  const isFull = item.player.length >= 3
+                  return (
                     <List.Item key={item.roomId}>
-                      <div className={styles.create}>
-                        <span className={styles.value}>
-                          {moment(item.roomId).format("YYYY-MM-DD HH:mm")}
-                        </span>
-                      </div>
-                      <div className={styles.player}>
-                        {item.player.length === 0 && <Tag>空无一人</Tag>}
-                        {item.player.map((playerItem, idx) => (
-                          <Avatar
-                            key={playerItem.playerId || idx}
-                            style={{
-                              backgroundColor: playerItem.isAI ? "#722ed1" : "#ffbf00",
-                              verticalAlign: "middle",
-                            }}
-                            size="large"
-                          >
-                            {playerItem.isAI ? "🤖" : playerItem.playerId.charAt(0)}
-                          </Avatar>
-                        ))}
-                      </div>
-                      <div>
+                      <div className={styles.roomRow}>
+                        <div className={styles.roomInfo}>
+                          <div className={styles.roomTime}>
+                            <span
+                              className={
+                                item.mode === "pdk" ? styles.tagPdk : styles.tagDdz
+                              }
+                            >
+                              {MODE_LABEL[(item.mode as T_Mode) ?? "ddz"]}
+                            </span>
+                            {formatRoomTime(item.roomId)}
+                          </div>
+                          <div className={styles.roomIdText}>#{item.roomId}</div>
+                        </div>
+
+                        <div className={styles.player}>
+                          {item.player.length === 0 && (
+                            <span className={styles.emptyHint}>空无一人</span>
+                          )}
+                          {item.player.map((playerItem, idx) => (
+                            <PlayerAvatar
+                              key={playerItem.playerId || idx}
+                              name={playerItem.playerId}
+                              isAI={playerItem.isAI}
+                              size={34}
+                            />
+                          ))}
+                        </div>
+
                         <Button
                           onClick={() => onJoin(item)}
                           type="primary"
                           size="small"
-                          disabled={item.player.length >= 3}
+                          disabled={isFull}
+                          className={styles.joinBtn}
                         >
-                          {item.player.length >= 3 ? "已满" : "加入房间"}
+                          {isFull ? "已满" : "加入"}
                         </Button>
                       </div>
                     </List.Item>
-                  )}
-                />
-              )}
-            </Spin>
-          </div>
-        ) : (
-          <Button type="primary" size="large" onClick={() => setIsShowName(true)}>
-            创建账号开始游戏
-          </Button>
-        )}
-      </div>
-
-      <Modal
-        open={isShowName}
-        onCancel={() => setIsShowName(false)}
-        onOk={() => form.submit()}
-        cancelText="取消"
-        okText="确定"
-        title="设置用户名"
-      >
-        <div style={{ paddingTop: 8 }}>
-          <Form onFinish={onFinish} form={form}>
-            <Form.Item
-              label="用户名"
-              name="userName"
-              rules={[
-                { required: true, message: "请输入用户名!" },
-                { max: 10, message: "长度不能超过10字符" },
-              ]}
-            >
-              <Input placeholder="输入你的昵称" />
-            </Form.Item>
-          </Form>
+                  )
+                }}
+              />
+            )}
+          </Spin>
         </div>
-      </Modal>
+      </div>
     </div>
   )
 }

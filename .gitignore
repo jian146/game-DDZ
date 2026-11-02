@@ -79,3 +79,12 @@ temp/
 *.tmp
 *.bak
 *.orig
+
+# ---------- 多端适配验证截图（本地生成，不提交） ----------
+.screenshots/
+
+# ---------- 玩家数据（含密码哈希与签名密钥，绝对不能提交） ----------
+game-ddz-server/data/
+data/
+*.key
+players.json

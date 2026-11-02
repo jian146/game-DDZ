@@ -1,6 +1,12 @@
 import { getCardPoint } from './card';
 import { identifyType, canBeat, type IdentifiedType } from './identify';
 import { enumerateAll, enumerateBeatCandidates, type Candidate } from './enumerate';
+import {
+  identifyPdk,
+  enumeratePdkAll,
+  enumeratePdkBeats,
+  type PdkCandidate,
+} from './pdk';
 
 /**
  * AI 决策模块 v3 —— 完整牌型识别 + 贪心打分
@@ -174,6 +180,84 @@ function decideBeatPlay(cards: number[], lastPlay: number[]): AIDecision {
   console.log(
     `[AI-beat] 最优: ${best.ident.type}(main=${best.ident.mainPoint}, len=${best.ident.mainLen}), ` +
     `vs 上家 ${lastType.type}(main=${lastType.mainPoint}, len=${lastType.mainLen})`,
+  );
+  return { action: 'playCards', cards: best.cards };
+}
+
+// ============================
+// 跑得快 AI
+// ============================
+
+/**
+ * 跑得快候选打分
+ * 和斗地主的口径不同：
+ *   - 一次出的张数越多越好（跑得快是跑牌游戏，不是保牌游戏）
+ *   - 炸弹的惩罚更重（炸弹只在自己快走完时才值钱）
+ *   - 单张最不划算，散牌留手里很难走
+ */
+function scorePdkCandidate(c: PdkCandidate, hand: number[]): number {
+  const remaining = hand.length - c.cards.length;
+  const id = c.ident;
+
+  // 一手出完，直接赢
+  if (remaining === 0) return 1_000_000;
+  // 出完只剩 1~2 张，下一步就能走
+  if (remaining <= 2) return 500_000 - remaining * 1000;
+
+  let score = c.cards.length * 2;
+  score -= id.mainPoint * 1.2;
+  if (id.type === 'bomb') score -= 60;
+  if (id.type === 'single') score -= 3;
+  if (id.type === 'straight') score += id.mainLen * 2;
+  if (id.type === 'consecutivePairs') score += id.mainLen * 3;
+  if (id.type.startsWith('plane')) score += 15;
+
+  return score;
+}
+
+/**
+ * 跑得快决策
+ *
+ * @param cards 自己的手牌
+ * @param lastPlay 上家出的牌，null 表示自由出牌
+ * @param mustInclude 首出必须带的牌 id（本房间第一局庄家牌），-1 表示无限制
+ *
+ * 规则要求「能管必须管」，所以只要能压就一定会出，只是挑最优的那手。
+ */
+export function decidePdkAI(
+  cards: number[],
+  lastPlay: number[] | null,
+  mustInclude: number = -1,
+): AIDecision {
+  const free = !lastPlay || lastPlay.length === 0;
+  const lastIdent = free ? null : identifyPdk(lastPlay!);
+
+  let candidates: PdkCandidate[] = free
+    ? enumeratePdkAll(cards)
+    : enumeratePdkBeats(cards, lastIdent!);
+
+  // 首出必须带庄家牌：只保留含这张牌的候选
+  if (mustInclude > 0) {
+    candidates = candidates.filter((c) => c.cards.includes(mustInclude));
+  }
+
+  if (candidates.length === 0) {
+    if (mustInclude > 0) {
+      // 兜底：庄家牌单独打出去，一定合法
+      console.log(`[AI-pdk] 强制带牌，直接出 ${mustInclude}`);
+      return { action: 'playCards', cards: [mustInclude] };
+    }
+    console.log('[AI-pdk] 没有能出的，pass');
+    return { action: 'pass' };
+  }
+
+  candidates.sort((a, b) => scorePdkCandidate(b, cards) - scorePdkCandidate(a, cards));
+  const best = candidates[0];
+
+  console.log(
+    `[AI-pdk] ${free ? '自由出牌' : '压牌'} 最优: ${best.ident.type}` +
+      `(main=${best.ident.mainPoint}, len=${best.ident.mainLen})，出 ${best.cards.length} 张，` +
+      `剩 ${cards.length - best.cards.length} 张，候选 ${candidates.length} 个`,
   );
   return { action: 'playCards', cards: best.cards };
 }
